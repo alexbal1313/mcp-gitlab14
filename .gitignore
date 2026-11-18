@@ -1,0 +1,18 @@
+# Build output
+/target/
+
+# Local configuration, credentials, and temporary files
+.env
+.env.*
+!.env.example
+.certs/
+.tmp/
+/.java-version
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# macOS
+.DS_Store

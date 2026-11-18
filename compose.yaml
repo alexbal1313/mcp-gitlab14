@@ -1,0 +1,11 @@
+services:
+  mcp-gitlab:
+    image: mcp-gitlab14:local
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    ports:
+      - "127.0.0.1:8004:8004"
+    environment:
+      TOKEN_GITLAB: ${TOKEN_GITLAB:?Set TOKEN_GITLAB}
+      GITLAB_BASE_URI: ${GITLAB_BASE_URI:-https://gitlab.example.com}

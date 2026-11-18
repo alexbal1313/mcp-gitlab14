@@ -1,0 +1,1633 @@
+[
+  {
+    "name": "gitlab_list_projects",
+    "arguments": {},
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "Projects",
+        "variables": {
+          "first": 20,
+          "after": null
+        },
+        "response": {
+          "data": {
+            "projects": {
+              "nodes": [
+                {
+                  "id": "gid://gitlab/Project/7",
+                  "name": "Project",
+                  "fullPath": "team/project",
+                  "description": "Demo",
+                  "lastActivityAt": "2026-01-02T03:04:05Z",
+                  "webUrl": "https://gitlab.example.com/team/project",
+                  "nameWithNamespace": "Team / Project",
+                  "createdAt": "2026-01-02T03:04:05Z",
+                  "visibility": "private",
+                  "httpUrlToRepo": "https://gitlab.example.com/team/project.git",
+                  "sshUrlToRepo": "git@gitlab.example.com:team/project.git"
+                }
+              ],
+              "pageInfo": {
+                "endCursor": "cursor-2",
+                "hasNextPage": true
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/items/0/fullPath": "team/project",
+      "/pageInfo/endCursor": "cursor-2",
+      "/pageInfo/hasNextPage": true
+    }
+  },
+  {
+    "name": "gitlab_get_project",
+    "arguments": {
+      "projectFullPath": "team/project"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "Project",
+        "variables": {
+          "fullPath": "team/project"
+        },
+        "response": {
+          "data": {
+            "project": {
+              "id": "gid://gitlab/Project/7",
+              "name": "Project",
+              "fullPath": "team/project",
+              "description": "Demo",
+              "lastActivityAt": "2026-01-02T03:04:05Z",
+              "webUrl": "https://gitlab.example.com/team/project",
+              "nameWithNamespace": "Team / Project",
+              "createdAt": "2026-01-02T03:04:05Z",
+              "visibility": "private",
+              "httpUrlToRepo": "https://gitlab.example.com/team/project.git",
+              "sshUrlToRepo": "git@gitlab.example.com:team/project.git"
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/fullPath": "team/project",
+      "/visibility": "private"
+    }
+  },
+  {
+    "name": "gitlab_list_project_issues",
+    "arguments": {
+      "projectFullPath": "team/project"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "ProjectIssues",
+        "variables": {
+          "fullPath": "team/project",
+          "first": 20
+        },
+        "response": {
+          "data": {
+            "project": {
+              "issues": {
+                "nodes": [
+                  {
+                    "iid": 3,
+                    "title": "Broken pipeline",
+                    "state": "opened",
+                    "updatedAt": "2026-01-02T03:04:05Z",
+                    "webUrl": "https://gitlab.example.com/team/project/-/issues/3",
+                    "author": {
+                      "username": "alice",
+                      "name": "Alice"
+                    },
+                    "assignees": {
+                      "nodes": [
+                        {
+                          "username": "bob",
+                          "name": "Bob"
+                        }
+                      ]
+                    },
+                    "labels": {
+                      "nodes": [
+                        {
+                          "title": "bug"
+                        }
+                      ]
+                    },
+                    "milestone": {
+                      "title": "v1"
+                    },
+                    "description": "Details",
+                    "createdAt": "2026-01-02T03:04:05Z",
+                    "closedAt": null,
+                    "weight": 2,
+                    "dueDate": "2026-02-01",
+                    "reference": "#3"
+                  }
+                ],
+                "pageInfo": {
+                  "endCursor": "cursor-2",
+                  "hasNextPage": true
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/items/0/title": "Broken pipeline",
+      "/items/0/labels/0": "bug",
+      "/items/0/assignees/0/username": "bob"
+    }
+  },
+  {
+    "name": "gitlab_get_issue",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 3
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "Issue",
+        "variables": {
+          "iid": "3"
+        },
+        "response": {
+          "data": {
+            "project": {
+              "issues": {
+                "nodes": [
+                  {
+                    "iid": 3,
+                    "title": "Broken pipeline",
+                    "state": "opened",
+                    "updatedAt": "2026-01-02T03:04:05Z",
+                    "webUrl": "https://gitlab.example.com/team/project/-/issues/3",
+                    "author": {
+                      "username": "alice",
+                      "name": "Alice"
+                    },
+                    "assignees": {
+                      "nodes": [
+                        {
+                          "username": "bob",
+                          "name": "Bob"
+                        }
+                      ]
+                    },
+                    "labels": {
+                      "nodes": [
+                        {
+                          "title": "bug"
+                        }
+                      ]
+                    },
+                    "milestone": {
+                      "title": "v1"
+                    },
+                    "description": "Details",
+                    "createdAt": "2026-01-02T03:04:05Z",
+                    "closedAt": null,
+                    "weight": 2,
+                    "dueDate": "2026-02-01",
+                    "reference": "#3"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 3,
+      "/description": "Details",
+      "/weight": 2
+    }
+  },
+  {
+    "name": "gitlab_search_issues",
+    "arguments": {
+      "query": "pipeline"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/issues",
+        "query": {
+          "scope": "all",
+          "search": "pipeline",
+          "order_by": "updated_at",
+          "sort": "desc",
+          "per_page": "20"
+        },
+        "response": [
+          {
+            "iid": 3,
+            "title": "Broken pipeline",
+            "state": "opened",
+            "updated_at": "2026-01-02T03:04:05Z",
+            "web_url": "https://gitlab.example.com/team/project/-/issues/3",
+            "author": {
+              "username": "alice",
+              "name": "Alice"
+            },
+            "assignees": [
+              {
+                "username": "bob",
+                "name": "Bob"
+              }
+            ],
+            "labels": [
+              "bug"
+            ],
+            "milestone": {
+              "title": "v1"
+            }
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/title": "Broken pipeline",
+      "/items/0/updatedAt": "2026-01-02T03:04:05Z",
+      "/items/0/labels/0": "bug"
+    }
+  },
+  {
+    "name": "gitlab_list_issue_discussions",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 3
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "Discussions",
+        "variables": {
+          "iid": "3",
+          "first": 20
+        },
+        "response": {
+          "data": {
+            "project": {
+              "issues": {
+                "nodes": [
+                  {
+                    "discussions": {
+                      "nodes": [
+                        {
+                          "id": "discussion-1",
+                          "notes": {
+                            "nodes": [
+                              {
+                                "id": "note-1",
+                                "body": "Reviewed",
+                                "author": {
+                                  "username": "alice",
+                                  "name": "Alice"
+                                },
+                                "createdAt": "2026-01-02T03:04:05Z",
+                                "updatedAt": "2026-01-02T03:04:05Z",
+                                "system": false,
+                                "resolvable": true,
+                                "resolved": false,
+                                "url": "https://gitlab.example.com/note/1"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "pageInfo": {
+                        "endCursor": "cursor-2",
+                        "hasNextPage": true
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/items/0/id": "discussion-1",
+      "/items/0/notes/0/body": "Reviewed",
+      "/items/0/notes/0/webUrl": "https://gitlab.example.com/note/1"
+    }
+  },
+  {
+    "name": "gitlab_list_merge_request_discussions",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 3
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "Discussions",
+        "variables": {
+          "iid": "3",
+          "first": 20
+        },
+        "response": {
+          "data": {
+            "project": {
+              "mergeRequests": {
+                "nodes": [
+                  {
+                    "discussions": {
+                      "nodes": [
+                        {
+                          "id": "discussion-1",
+                          "notes": {
+                            "nodes": [
+                              {
+                                "id": "note-1",
+                                "body": "Reviewed",
+                                "author": {
+                                  "username": "alice",
+                                  "name": "Alice"
+                                },
+                                "createdAt": "2026-01-02T03:04:05Z",
+                                "updatedAt": "2026-01-02T03:04:05Z",
+                                "system": false,
+                                "resolvable": true,
+                                "resolved": false,
+                                "url": "https://gitlab.example.com/note/1"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "pageInfo": {
+                        "endCursor": "cursor-2",
+                        "hasNextPage": true
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/items/0/id": "discussion-1",
+      "/items/0/notes/0/body": "Reviewed",
+      "/items/0/notes/0/webUrl": "https://gitlab.example.com/note/1"
+    }
+  },
+  {
+    "name": "gitlab_list_project_merge_requests",
+    "arguments": {
+      "projectFullPath": "team/project"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "ProjectMergeRequests",
+        "variables": {},
+        "response": {
+          "data": {
+            "project": {
+              "mergeRequests": {
+                "nodes": [
+                  {
+                    "iid": 3,
+                    "title": "Fix pipeline",
+                    "state": "opened",
+                    "updatedAt": "2026-01-02T03:04:05Z",
+                    "webUrl": "https://gitlab.example.com/team/project/-/issues/3",
+                    "author": {
+                      "username": "alice",
+                      "name": "Alice"
+                    },
+                    "assignees": {
+                      "nodes": [
+                        {
+                          "username": "bob",
+                          "name": "Bob"
+                        }
+                      ]
+                    },
+                    "labels": {
+                      "nodes": [
+                        {
+                          "title": "bug"
+                        }
+                      ]
+                    },
+                    "milestone": {
+                      "title": "v1"
+                    },
+                    "description": "Details",
+                    "createdAt": "2026-01-02T03:04:05Z",
+                    "closedAt": null,
+                    "weight": 2,
+                    "dueDate": "2026-02-01",
+                    "reference": "#3",
+                    "draft": false,
+                    "sourceBranch": "fix",
+                    "targetBranch": "main",
+                    "mergeStatusEnum": "can_be_merged",
+                    "reviewers": {
+                      "nodes": [
+                        {
+                          "username": "carol",
+                          "name": "Carol"
+                        }
+                      ]
+                    },
+                    "approvalState": {
+                      "approvalRulesOverwritten": false
+                    },
+                    "approvalsRequired": 1,
+                    "approvalsLeft": 1,
+                    "headPipeline": {
+                      "id": "gid://gitlab/Ci::Pipeline/42",
+                      "status": "SUCCESS"
+                    }
+                  }
+                ],
+                "pageInfo": {
+                  "endCursor": "cursor-2",
+                  "hasNextPage": true
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/items/0/title": "Fix pipeline",
+      "/items/0/mergeStatus": "can_be_merged"
+    }
+  },
+  {
+    "name": "gitlab_get_merge_request",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 3
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "MergeRequest",
+        "variables": {
+          "iid": "3"
+        },
+        "response": {
+          "data": {
+            "project": {
+              "mergeRequests": {
+                "nodes": [
+                  {
+                    "iid": 3,
+                    "title": "Fix pipeline",
+                    "state": "opened",
+                    "updatedAt": "2026-01-02T03:04:05Z",
+                    "webUrl": "https://gitlab.example.com/team/project/-/issues/3",
+                    "author": {
+                      "username": "alice",
+                      "name": "Alice"
+                    },
+                    "assignees": {
+                      "nodes": [
+                        {
+                          "username": "bob",
+                          "name": "Bob"
+                        }
+                      ]
+                    },
+                    "labels": {
+                      "nodes": [
+                        {
+                          "title": "bug"
+                        }
+                      ]
+                    },
+                    "milestone": {
+                      "title": "v1"
+                    },
+                    "description": "Details",
+                    "createdAt": "2026-01-02T03:04:05Z",
+                    "closedAt": null,
+                    "weight": 2,
+                    "dueDate": "2026-02-01",
+                    "reference": "#3",
+                    "draft": false,
+                    "sourceBranch": "fix",
+                    "targetBranch": "main",
+                    "mergeStatusEnum": "can_be_merged",
+                    "reviewers": {
+                      "nodes": [
+                        {
+                          "username": "carol",
+                          "name": "Carol"
+                        }
+                      ]
+                    },
+                    "approvalState": {
+                      "approvalRulesOverwritten": false
+                    },
+                    "approvalsRequired": 1,
+                    "approvalsLeft": 1,
+                    "headPipeline": {
+                      "id": "gid://gitlab/Ci::Pipeline/42",
+                      "status": "SUCCESS"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/description": "Details",
+      "/reviewers/0/username": "carol",
+      "/approvalsLeft": 1
+    }
+  },
+  {
+    "name": "gitlab_get_merge_request_diff",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 3
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests/3/changes",
+        "query": {},
+        "response": {
+          "changes": [
+            {
+              "old_path": "old.txt",
+              "new_path": "new.txt",
+              "new_file": false,
+              "renamed_file": true,
+              "deleted_file": false,
+              "diff": "@@ -1 +1 @@\n-old\n+new"
+            }
+          ],
+          "overflow": true
+        }
+      }
+    ],
+    "expected": {
+      "/items/0/newPath": "new.txt",
+      "/sourceLimited": true,
+      "/truncated": true
+    }
+  },
+  {
+    "name": "gitlab_search_merge_requests",
+    "arguments": {
+      "query": "Fix"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/merge_requests",
+        "query": {
+          "scope": "all",
+          "search": "Fix"
+        },
+        "response": [
+          {
+            "iid": 3,
+            "title": "Fix pipeline",
+            "state": "opened",
+            "source_branch": "fix",
+            "target_branch": "main",
+            "merge_status": "can_be_merged",
+            "assignees": [],
+            "author": {
+              "username": "alice",
+              "name": "Alice"
+            },
+            "milestone": {
+              "title": "v1"
+            }
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/title": "Fix pipeline",
+      "/items/0/sourceBranch": "fix"
+    }
+  },
+  {
+    "name": "gitlab_search_code",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "query": "hello",
+      "path": "src",
+      "extension": "java"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject",
+        "query": {},
+        "response": {
+          "web_url": "https://gitlab.example.com/team/project",
+          "default_branch": "main"
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/search",
+        "query": {
+          "scope": "blobs",
+          "search": "hello path:src extension:java",
+          "ref": "main",
+          "per_page": "20"
+        },
+        "response": [
+          {
+            "path": "src/App.java",
+            "ref": "main",
+            "startline": 7,
+            "data": "hello world"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/line": 7,
+      "/items/0/fragment": "hello world",
+      "/items/0/webUrl": "https://gitlab.example.com/team/project/-/blob/main/src/App.java#L7",
+      "/truncated": false
+    }
+  },
+  {
+    "name": "gitlab_get_file_content",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "path": "README.md",
+      "ref": "main",
+      "startLine": 2,
+      "endLine": 3
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "FileContent",
+        "variables": {
+          "paths": [
+            "README.md"
+          ],
+          "ref": "main"
+        },
+        "response": {
+          "data": {
+            "project": {
+              "repository": {
+                "blobs": {
+                  "nodes": [
+                    {
+                      "path": "README.md",
+                      "size": 18,
+                      "rawTextBlob": "one\ntwo\nthree"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/text": "two\nthree",
+      "/startLine": 2,
+      "/endLine": 3,
+      "/totalLines": 3,
+      "/contentAvailable": true
+    }
+  },
+  {
+    "name": "gitlab_list_project_commits",
+    "arguments": {
+      "projectFullPath": "team/project"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/repository/commits",
+        "query": {
+          "per_page": "20"
+        },
+        "response": [
+          {
+            "id": "abc123",
+            "short_id": "abc",
+            "title": "Fix build",
+            "message": "Fix build\n",
+            "author_name": "Alice",
+            "author_email": "alice@example.com",
+            "authored_date": "2026-01-02T03:04:05Z",
+            "committed_date": "2026-01-02T03:04:05Z",
+            "parent_ids": [
+              "def456"
+            ],
+            "web_url": "https://gitlab.example.com/team/project/-/commit/abc123"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/sha": "abc123",
+      "/items/0/shortId": "abc",
+      "/items/0/authorName": "Alice"
+    }
+  },
+  {
+    "name": "gitlab_get_commit",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "sha": "main"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/repository/commits/main",
+        "query": {},
+        "response": {
+          "id": "abc123",
+          "short_id": "abc",
+          "title": "Fix build",
+          "message": "Fix build\n",
+          "author_name": "Alice",
+          "author_email": "alice@example.com",
+          "authored_date": "2026-01-02T03:04:05Z",
+          "committed_date": "2026-01-02T03:04:05Z",
+          "parent_ids": [
+            "def456"
+          ],
+          "web_url": "https://gitlab.example.com/team/project/-/commit/abc123"
+        }
+      }
+    ],
+    "expected": {
+      "/sha": "abc123",
+      "/parentIds/0": "def456",
+      "/committedDate": "2026-01-02T03:04:05Z"
+    }
+  },
+  {
+    "name": "gitlab_get_commit_diff",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "sha": "abc123"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/repository/commits/abc123/diff",
+        "query": {},
+        "response": [
+          {
+            "old_path": "old.txt",
+            "new_path": "new.txt",
+            "new_file": false,
+            "renamed_file": true,
+            "deleted_file": false,
+            "diff": "@@ -1 +1 @@\n-old\n+new"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/renamedFile": true,
+      "/items/0/diff": "@@ -1 +1 @@\n-old\n+new",
+      "/sourceLimited": false
+    }
+  },
+  {
+    "name": "gitlab_list_tags",
+    "arguments": {
+      "projectFullPath": "team/project"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/repository/tags",
+        "query": {
+          "per_page": "20"
+        },
+        "response": [
+          {
+            "name": "v1",
+            "target": "abc123",
+            "message": "Release",
+            "protected": true,
+            "commit": {
+              "id": "abc123",
+              "short_id": "abc",
+              "title": "Fix build",
+              "message": "Fix build\n",
+              "author_name": "Alice",
+              "author_email": "alice@example.com",
+              "authored_date": "2026-01-02T03:04:05Z",
+              "committed_date": "2026-01-02T03:04:05Z",
+              "parent_ids": [
+                "def456"
+              ],
+              "web_url": "https://gitlab.example.com/team/project/-/commit/abc123"
+            },
+            "release": {
+              "name": "v1",
+              "tag_name": "v1",
+              "description": "First",
+              "released_at": "2026-01-02T03:04:05Z"
+            }
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/name": "v1",
+      "/items/0/protected": true
+    }
+  },
+  {
+    "name": "gitlab_get_tag",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "tagName": "v1"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/repository/tags/v1",
+        "query": {},
+        "response": {
+          "name": "v1",
+          "target": "abc123",
+          "message": "Release",
+          "protected": true,
+          "commit": {
+            "id": "abc123",
+            "short_id": "abc",
+            "title": "Fix build",
+            "message": "Fix build\n",
+            "author_name": "Alice",
+            "author_email": "alice@example.com",
+            "authored_date": "2026-01-02T03:04:05Z",
+            "committed_date": "2026-01-02T03:04:05Z",
+            "parent_ids": [
+              "def456"
+            ],
+            "web_url": "https://gitlab.example.com/team/project/-/commit/abc123"
+          },
+          "release": {
+            "name": "v1",
+            "tag_name": "v1",
+            "description": "First",
+            "released_at": "2026-01-02T03:04:05Z"
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/name": "v1",
+      "/commit/sha": "abc123",
+      "/release/tagName": "v1"
+    }
+  },
+  {
+    "name": "gitlab_list_dir",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "path": "src",
+      "ref": "main"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/repository/tree",
+        "query": {
+          "path": "src",
+          "ref": "main",
+          "recursive": "false",
+          "per_page": "20"
+        },
+        "response": [
+          {
+            "id": "tree-1",
+            "name": "App.java",
+            "type": "blob",
+            "path": "src/App.java"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/path": "src/App.java",
+      "/items/0/type": "blob"
+    }
+  },
+  {
+    "name": "gitlab_search_users",
+    "arguments": {
+      "userName": "Alice"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/search",
+        "query": {
+          "scope": "users",
+          "search": "Alice",
+          "per_page": "20"
+        },
+        "response": [
+          {
+            "id": 9,
+            "username": "alice",
+            "name": "Alice",
+            "state": "active",
+            "web_url": "https://gitlab.example.com/alice"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/username": "alice",
+      "/items/0/webUrl": "https://gitlab.example.com/alice"
+    }
+  },
+  {
+    "name": "gitlab_list_project_pipelines",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "status": "success"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "ProjectPipelines",
+        "variables": {
+          "status": "SUCCESS"
+        },
+        "response": {
+          "data": {
+            "project": {
+              "pipelines": {
+                "nodes": [
+                  {
+                    "iid": "12",
+                    "ref": "main",
+                    "status": "SUCCESS",
+                    "sha": "abc",
+                    "createdAt": "2026-01-02T03:04:05Z",
+                    "updatedAt": "2026-01-02T03:04:05Z",
+                    "finishedAt": "2026-01-02T03:04:05Z",
+                    "duration": 10,
+                    "user": {
+                      "username": "alice"
+                    },
+                    "path": "/team/project/-/pipelines/42",
+                    "startedAt": "2026-01-02T03:04:05Z",
+                    "coverage": 99,
+                    "warnings": false,
+                    "commit": {
+                      "sha": "abc123",
+                      "shortId": "abc",
+                      "title": "Fix build",
+                      "authorName": "Alice",
+                      "authoredDate": "2026-01-02T03:04:05Z",
+                      "webUrl": "https://gitlab.example.com/commit/abc123"
+                    },
+                    "stages": {
+                      "nodes": [
+                        {
+                          "name": "test",
+                          "status": "SUCCESS"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "pageInfo": {
+                  "endCursor": "cursor-2",
+                  "hasNextPage": true
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/items/0/iid": 12,
+      "/items/0/status": "success",
+      "/items/0/webUrl": "$GITLAB/team/project/-/pipelines/42"
+    }
+  },
+  {
+    "name": "gitlab_get_pipeline",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "pipelineIid": 12
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "Pipeline",
+        "variables": {
+          "iid": "12"
+        },
+        "response": {
+          "data": {
+            "project": {
+              "pipeline": {
+                "iid": "12",
+                "ref": "main",
+                "status": "SUCCESS",
+                "sha": "abc",
+                "createdAt": "2026-01-02T03:04:05Z",
+                "updatedAt": "2026-01-02T03:04:05Z",
+                "finishedAt": "2026-01-02T03:04:05Z",
+                "duration": 10,
+                "user": {
+                  "username": "alice"
+                },
+                "path": "/team/project/-/pipelines/42",
+                "startedAt": "2026-01-02T03:04:05Z",
+                "coverage": 99,
+                "warnings": false,
+                "commit": {
+                  "sha": "abc123",
+                  "shortId": "abc",
+                  "title": "Fix build",
+                  "authorName": "Alice",
+                  "authoredDate": "2026-01-02T03:04:05Z",
+                  "webUrl": "https://gitlab.example.com/commit/abc123"
+                },
+                "stages": {
+                  "nodes": [
+                    {
+                      "name": "test",
+                      "status": "SUCCESS"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 12,
+      "/stages/0/status": "success",
+      "/coverage": 99
+    }
+  },
+  {
+    "name": "gitlab_list_pipeline_jobs",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "pipelineIid": 12,
+      "status": "success"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "PipelineJobs",
+        "variables": {
+          "iid": "12",
+          "statuses": [
+            "SUCCESS"
+          ]
+        },
+        "response": {
+          "data": {
+            "project": {
+              "pipeline": {
+                "jobs": {
+                  "nodes": [
+                    {
+                      "id": "gid://gitlab/Ci::Build/55",
+                      "name": "unit",
+                      "status": "SUCCESS",
+                      "stage": {
+                        "name": "test"
+                      },
+                      "duration": 4,
+                      "startedAt": "2026-01-02T03:04:05Z",
+                      "finishedAt": "2026-01-02T03:04:05Z",
+                      "allowFailure": false,
+                      "createdAt": "2026-01-02T03:04:05Z",
+                      "queuedAt": "2026-01-02T03:04:05Z",
+                      "scheduledAt": null,
+                      "coverage": 99,
+                      "tags": [
+                        "docker"
+                      ],
+                      "manualJob": false,
+                      "triggered": false,
+                      "downstreamPipeline": {
+                        "iid": "13",
+                        "ref": "main",
+                        "status": "PENDING"
+                      }
+                    }
+                  ],
+                  "pageInfo": {
+                    "endCursor": "cursor-2",
+                    "hasNextPage": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/items/0/name": "unit",
+      "/items/0/status": "success",
+      "/items/0/webUrl": "$GITLAB/team/project/-/jobs/55"
+    }
+  },
+  {
+    "name": "gitlab_get_job",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "pipelineIid": 12,
+      "jobName": "unit"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "PipelineJob",
+        "variables": {
+          "iid": "12",
+          "jobName": "unit"
+        },
+        "response": {
+          "data": {
+            "project": {
+              "pipeline": {
+                "job": {
+                  "id": "gid://gitlab/Ci::Build/55",
+                  "name": "unit",
+                  "status": "SUCCESS",
+                  "stage": {
+                    "name": "test"
+                  },
+                  "duration": 4,
+                  "startedAt": "2026-01-02T03:04:05Z",
+                  "finishedAt": "2026-01-02T03:04:05Z",
+                  "allowFailure": false,
+                  "createdAt": "2026-01-02T03:04:05Z",
+                  "queuedAt": "2026-01-02T03:04:05Z",
+                  "scheduledAt": null,
+                  "coverage": 99,
+                  "tags": [
+                    "docker"
+                  ],
+                  "manualJob": false,
+                  "triggered": false,
+                  "downstreamPipeline": {
+                    "iid": "13",
+                    "ref": "main",
+                    "status": "PENDING"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/name": "unit",
+      "/tags/0": "docker",
+      "/downstreamPipeline/iid": 13,
+      "/downstreamPipeline/status": "pending"
+    }
+  },
+  {
+    "name": "gitlab_get_job_log",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "pipelineIid": 12,
+      "jobName": "unit",
+      "lines": 2
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "PipelineJobForLog",
+        "variables": {},
+        "response": {
+          "data": {
+            "project": {
+              "pipeline": {
+                "job": {
+                  "id": "gid://gitlab/Ci::Build/55"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/jobs/55/trace",
+        "raw": "one\ntwo\nthree"
+      }
+    ],
+    "expected": {
+      "/text": "two\nthree",
+      "/totalLines": 3,
+      "/truncated": true
+    }
+  },
+  {
+    "name": "gitlab_list_active_projects",
+    "arguments": {
+      "updatedAfter": "2026-01-02T03:04:05Z"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects",
+        "query": {
+          "last_activity_after": "2026-01-02T03:04:05Z",
+          "order_by": "last_activity_at",
+          "sort": "desc"
+        },
+        "response": [
+          {
+            "id": 7,
+            "name": "Project",
+            "path_with_namespace": "team/project",
+            "last_activity_at": "2026-01-02T03:04:05Z",
+            "web_url": "https://gitlab.example.com/team/project"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/fullPath": "team/project",
+      "/items/0/lastActivityAt": "2026-01-02T03:04:05Z"
+    }
+  },
+  {
+    "name": "gitlab_list_project_labels",
+    "arguments": {
+      "projectFullPath": "team/project"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/labels",
+        "query": {},
+        "response": [
+          {
+            "id": 2,
+            "name": "bug",
+            "color": "#ff0000",
+            "description": "Bug",
+            "priority": 1
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/name": "bug",
+      "/items/0/color": "#ff0000"
+    }
+  },
+  {
+    "name": "gitlab_list_project_milestones",
+    "arguments": {
+      "projectFullPath": "team/project"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/milestones",
+        "query": {},
+        "response": [
+          {
+            "id": 4,
+            "title": "v1",
+            "state": "active",
+            "due_date": "2026-02-01"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/title": "v1",
+      "/items/0/dueDate": "2026-02-01"
+    }
+  },
+  {
+    "name": "gitlab_create_issue",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "title": "New issue",
+      "description": "Details",
+      "labels": [
+        "bug"
+      ],
+      "milestone": "v1"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/milestones",
+        "query": {
+          "per_page": "100",
+          "page": "1"
+        },
+        "response": [
+          {
+            "id": 4,
+            "title": "v1",
+            "state": "active",
+            "due_date": "2026-02-01"
+          }
+        ]
+      },
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/issues",
+        "query": {},
+        "response": {
+          "iid": 3,
+          "title": "New issue",
+          "labels": [
+            "bug"
+          ],
+          "milestone": {
+            "title": "v1"
+          },
+          "created_at": "2026-01-02T03:04:05Z",
+          "updated_at": "2026-01-02T03:04:05Z",
+          "web_url": "https://gitlab.example.com/team/project/-/issues/3",
+          "references": {
+            "short": "#3"
+          },
+          "assignees": [
+            {
+              "username": "alice",
+              "name": "Alice"
+            }
+          ]
+        },
+        "body": {
+          "title": "New issue",
+          "description": "Details",
+          "labels": "bug",
+          "milestone_id": 4
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 3,
+      "/createdAt": "2026-01-02T03:04:05Z",
+      "/milestone/title": "v1",
+      "/projectFullPath": "team/project"
+    }
+  },
+  {
+    "name": "gitlab_create_issue_note",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 3,
+      "body": "Reviewed"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/issues/3/notes",
+        "query": {},
+        "response": {
+          "id": 88,
+          "noteable_iid": 3,
+          "created_at": "2026-01-02T03:04:05Z"
+        },
+        "body": {
+          "body": "Reviewed"
+        }
+      }
+    ],
+    "expected": {
+      "/id": 88,
+      "/iid": 3,
+      "/createdAt": "2026-01-02T03:04:05Z"
+    }
+  },
+  {
+    "name": "gitlab_modify_issue_labels",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 3,
+      "action": "add_labels",
+      "labels": "bug"
+    },
+    "steps": [
+      {
+        "method": "PUT",
+        "path": "/api/v4/projects/team%2Fproject/issues/3",
+        "query": {},
+        "response": {
+          "iid": 3,
+          "title": "New issue",
+          "labels": [
+            "bug"
+          ],
+          "milestone": {
+            "title": "v1"
+          },
+          "created_at": "2026-01-02T03:04:05Z",
+          "updated_at": "2026-01-02T03:04:05Z",
+          "web_url": "https://gitlab.example.com/team/project/-/issues/3",
+          "references": {
+            "short": "#3"
+          },
+          "assignees": [
+            {
+              "username": "alice",
+              "name": "Alice"
+            }
+          ]
+        },
+        "body": {
+          "add_labels": "bug"
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 3,
+      "/labels/0": "bug",
+      "/updatedAt": "2026-01-02T03:04:05Z"
+    }
+  },
+  {
+    "name": "gitlab_assign_issue",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 3,
+      "assignees": [
+        "alice"
+      ]
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/users",
+        "query": {
+          "username": "alice"
+        },
+        "response": [
+          {
+            "id": 9,
+            "username": "alice",
+            "name": "Alice",
+            "state": "active",
+            "web_url": "https://gitlab.example.com/alice"
+          }
+        ]
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v4/projects/team%2Fproject/issues/3",
+        "query": {},
+        "response": {
+          "iid": 3,
+          "title": "New issue",
+          "labels": [
+            "bug"
+          ],
+          "milestone": {
+            "title": "v1"
+          },
+          "created_at": "2026-01-02T03:04:05Z",
+          "updated_at": "2026-01-02T03:04:05Z",
+          "web_url": "https://gitlab.example.com/team/project/-/issues/3",
+          "references": {
+            "short": "#3"
+          },
+          "assignees": [
+            {
+              "username": "alice",
+              "name": "Alice"
+            }
+          ]
+        },
+        "body": {
+          "assignee_ids": [
+            9
+          ]
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 3,
+      "/assignees/0/username": "alice",
+      "/updatedAt": "2026-01-02T03:04:05Z"
+    }
+  },
+  {
+    "name": "gitlab_assign_issue_milestone",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 3,
+      "milestone": "v1"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/milestones",
+        "query": {
+          "per_page": "100",
+          "page": "1"
+        },
+        "response": [
+          {
+            "id": 4,
+            "title": "v1",
+            "state": "active",
+            "due_date": "2026-02-01"
+          }
+        ]
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v4/projects/team%2Fproject/issues/3",
+        "query": {},
+        "response": {
+          "iid": 3,
+          "title": "New issue",
+          "labels": [
+            "bug"
+          ],
+          "milestone": {
+            "title": "v1"
+          },
+          "created_at": "2026-01-02T03:04:05Z",
+          "updated_at": "2026-01-02T03:04:05Z",
+          "web_url": "https://gitlab.example.com/team/project/-/issues/3",
+          "references": {
+            "short": "#3"
+          },
+          "assignees": [
+            {
+              "username": "alice",
+              "name": "Alice"
+            }
+          ]
+        },
+        "body": {
+          "milestone_id": 4
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 3,
+      "/milestone/title": "v1",
+      "/updatedAt": "2026-01-02T03:04:05Z"
+    }
+  }
+]
