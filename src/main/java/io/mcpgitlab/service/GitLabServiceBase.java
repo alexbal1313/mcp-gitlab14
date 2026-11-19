@@ -164,7 +164,7 @@ public abstract class GitLabServiceBase {
     }
 
     /**
-     * Checks write response success and, for 400/409/422 errors,
+     * Checks write response success and, for 400/405/406/409/422 errors,
      * preserves the GitLab response body with the specific rejection reason.
      *
      * <p>Unlike {@link #ensureRestSuccess(int)}, which sees only the status
@@ -185,7 +185,8 @@ public abstract class GitLabServiceBase {
         if (status == 401 || status == 403) {
             throw new GitLabException("ACCESS_DENIED", "GitLab denied access");
         }
-        if (status == 400 || status == 409 || status == 422) {
+        // 405/406: the object is in an unsuitable state (MR not mergeable, pipeline/job not cancelable or retryable).
+        if (status == 400 || status == 405 || status == 406 || status == 409 || status == 422) {
             throw new GitLabException("VALIDATION_ERROR",
                     detail == null ? "GitLab rejected the change" : "GitLab rejected the change: " + detail);
         }
@@ -204,6 +205,21 @@ public abstract class GitLabServiceBase {
             return message == null ? body : message.toString();
         } catch (JsonProcessingException exception) {
             return body;
+        }
+    }
+
+    /**
+     * Extracts the numeric id from a GraphQL global id ({@code gid://gitlab/Ci::Build/456}).
+     */
+    protected int numericId(Object gid) {
+        if (!(gid instanceof String id) || !id.contains("/")) {
+            throw new GitLabException("GITLAB_ERROR", "GitLab did not return a numeric id");
+        }
+        String tail = id.substring(id.lastIndexOf('/') + 1);
+        try {
+            return Integer.parseInt(tail);
+        } catch (NumberFormatException exception) {
+            throw new GitLabException("GITLAB_ERROR", "GitLab did not return a numeric id");
         }
     }
 

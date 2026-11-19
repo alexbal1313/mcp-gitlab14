@@ -5,19 +5,15 @@ import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
 import jakarta.inject.Inject;
 import io.mcpgitlab.service.GitLabReadService;
-import io.mcpgitlab.service.GitLabWriteService;
 
 /**
- * Exposes the fixed set of GitLab v1 MCP tools:
- * 28 read and 5 write.
+ * Exposes the GitLab v1 MCP read tools. Write tools live in {@link McpWriteTools}
+ * (published only when {@code gitlab.write.enabled=true}).
  */
 public class McpTools {
 
     @Inject
     GitLabReadService gitLabReadService;
-
-    @Inject
-    GitLabWriteService gitLabWriteService;
 
     /**
      * Allowed issue states in GitLab MCP contracts.
@@ -265,15 +261,64 @@ public class McpTools {
         return gitLabReadService.getTag(projectFullPath, tagName);
     }
 
-    /** Returns a non-recursive list of files and folders in a repository directory. */
-    @Tool(name = "gitlab_list_dir", description = "Returns a compact, non-recursive list of files and folders in a GitLab repository directory.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
+    /** Returns files and folders in a repository directory; non-recursive by default. */
+    @Tool(name = "gitlab_list_dir", description = "Returns a compact list of files and folders in a GitLab repository directory; non-recursive by default.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
     public ToolResponse listDir(
             @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
             @ToolArg(description = "Directory path within the repository; defaults to the root directory.", required = false) String path,
             @ToolArg(description = "Commit SHA, branch name, or tag name; defaults to the project default branch.", required = false) String ref,
+            @ToolArg(description = "true returns entries from all nested levels; defaults to false.", required = false) Boolean recursive,
             @ToolArg(description = "Number of items from 1 to 20; defaults to 20.", required = false) Integer items,
             @ToolArg(description = "Number of the next REST page.", required = false) String afterCursor) {
-        return gitLabReadService.listDir(projectFullPath, path, ref, items, afterCursor);
+        return gitLabReadService.listDir(projectFullPath, path, ref, recursive, items, afterCursor);
+    }
+
+    @Tool(name = "gitlab_list_branches", description = "Returns a compact list of GitLab repository branches.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
+    public ToolResponse listBranches(
+            @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
+            @ToolArg(description = "Branch name substring; ^ and $ anchor the start and end of the name.", required = false) String search,
+            @ToolArg(description = "Number of items from 1 to 20; defaults to 20.", required = false) Integer items,
+            @ToolArg(description = "Number of the next REST page.", required = false) String afterCursor) {
+        return gitLabReadService.listBranches(projectFullPath, search, items, afterCursor);
+    }
+
+    @Tool(name = "gitlab_get_branch", description = "Returns detailed information about a GitLab repository branch.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
+    public ToolResponse getBranch(
+            @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
+            @ToolArg(description = "Branch name, for example main or feature/x.") String branchName) {
+        return gitLabReadService.getBranch(projectFullPath, branchName);
+    }
+
+    @Tool(name = "gitlab_compare_refs", description = "Compares two refs (branch, tag, or SHA): commits and changed file paths without diff content.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
+    public ToolResponse compareRefs(
+            @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
+            @ToolArg(description = "Base ref: branch, tag, or SHA.") String from,
+            @ToolArg(description = "Ref to compare: branch, tag, or SHA.") String to,
+            @ToolArg(description = "Maximum number of commits from 1 to 20; defaults to 20.", required = false) Integer items) {
+        return gitLabReadService.compareRefs(projectFullPath, from, to, items);
+    }
+
+    @Tool(name = "gitlab_list_project_members", description = "Returns direct and inherited GitLab project members with their access level.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
+    public ToolResponse listProjectMembers(
+            @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
+            @ToolArg(description = "Search string for name or username.", required = false) String search,
+            @ToolArg(description = "Number of items from 1 to 20; defaults to 20.", required = false) Integer items,
+            @ToolArg(description = "Cursor of the next GraphQL page.", required = false) String afterCursor) {
+        return gitLabReadService.listProjectMembers(projectFullPath, search, items, afterCursor);
+    }
+
+    @Tool(name = "gitlab_get_merge_request_commits", description = "Returns commits of a GitLab merge request.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
+    public ToolResponse getMergeRequestCommits(
+            @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
+            @ToolArg(description = "Project-scoped merge request IID.") Integer iid,
+            @ToolArg(description = "Number of items from 1 to 20; defaults to 20.", required = false) Integer items,
+            @ToolArg(description = "Cursor of the next GraphQL page.", required = false) String afterCursor) {
+        return gitLabReadService.getMergeRequestCommits(projectFullPath, iid, items, afterCursor);
+    }
+
+    @Tool(name = "gitlab_server_info", description = "Returns the GitLab version and instance address; a successful response confirms connectivity and token validity.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
+    public ToolResponse serverInfo() {
+        return gitLabReadService.serverInfo();
     }
 
     @Tool(name="gitlab_search_users", description = "Searches users by name or username. Only Latin letters are supported.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
@@ -363,55 +408,5 @@ public class McpTools {
             @ToolArg(description = "Number of items from 1 to 20; defaults to 20.", required = false) Integer items,
             @ToolArg(description = "Number of the next REST page.", required = false) String afterCursor) {
         return gitLabReadService.listProjectMilestones(projectFullPath, items, afterCursor);
-    }
-
-    //**************** Write operations *******************
-
-    /** Creates a new issue. */
-    @Tool(name = "gitlab_create_issue", description = "Creates a new GitLab issue.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
-    public ToolResponse createIssue(
-            @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
-            @ToolArg(description = "Issue title.") String title,
-            @ToolArg(description = "Issue body.", required = false) String description,
-            @ToolArg(description = "Issue labels.", required = false) String[] labels,
-            @ToolArg(description = "Project milestone title.", required = false) String milestone) {
-        return gitLabWriteService.createIssue(projectFullPath, title, description, labels, milestone);
-    }
-
-    /** Creates a new issue comment (note). */
-    @Tool(name = "gitlab_create_issue_note", description = "Creates a new GitLab issue comment (note).", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
-    public ToolResponse createIssueNote(
-            @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
-            @ToolArg(description = "Project-scoped issue IID.") Integer iid,
-            @ToolArg(description = "Comment body.") String body) {
-        return gitLabWriteService.createIssueNote(projectFullPath, iid, body);
-    }
-
-    /** Adds or removes issue labels. */
-    @Tool(name = "gitlab_modify_issue_labels", description = "Adds or removes GitLab issue labels.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
-    public ToolResponse modifyIssueLabels(
-            @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
-            @ToolArg(description = "Project-scoped issue IID.") Integer iid,
-            @ToolArg(description = "Action: add_labels to add labels, remove_labels to remove labels.") IssueLabelAction action,
-            @ToolArg(description = "Comma-separated issue labels.") String labels) {
-        return gitLabWriteService.modifyIssueLabels(projectFullPath, iid, action == null ? null : action.name(), labels);
-    }
-
-    /** Replaces all issue assignees. */
-    @Tool(name = "gitlab_assign_issue", description = "Assigns GitLab issue assignees, fully replacing the current list.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
-    public ToolResponse assignIssue(
-            @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
-            @ToolArg(description = "Project-scoped issue IID.") Integer iid,
-            @ToolArg(description = "Assignee usernames; an empty array removes all assignees.", required = false) String[] assignees) {
-        return gitLabWriteService.assignIssue(projectFullPath, iid, assignees);
-    }
-
-    /** Assigns or removes an issue milestone. */
-    @Tool(name = "gitlab_assign_issue_milestone", description = "Assigns or removes a GitLab issue milestone.", structuredContent = true, outputSchema = @Tool.OutputSchema(generator = FreeFormOutputSchemaGenerator.class))
-    public ToolResponse assignIssueMilestone(
-            @ToolArg(description = "Full project path in the form group/subgroup/project.") String projectFullPath,
-            @ToolArg(description = "Project-scoped issue IID.") Integer iid,
-            @ToolArg(description = "Project milestone title; an empty value removes the milestone.", required = false) String milestone) {
-        return gitLabWriteService.assignIssueMilestone(projectFullPath, iid, milestone);
     }
 }

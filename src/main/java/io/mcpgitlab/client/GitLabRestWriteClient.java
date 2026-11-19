@@ -5,6 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * REST v4 adapter for GitLab WRITE operations: POST, PUT, and DELETE with a JSON body.
@@ -143,5 +144,104 @@ public class GitLabRestWriteClient extends GitLabRestClientBase {
                 privateToken,
                 projectPath(projectFullPath) + "/issues/" + iid,
                 body);
+    }
+
+    /**
+     * Creates a merge request; the service builds the body (only supplied fields).
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse createMergeRequest(String privateToken, String projectFullPath, Map<String, Object> body) {
+        return post(privateToken, projectPath(projectFullPath) + "/merge_requests", body);
+    }
+
+    /**
+     * Partially updates a merge request; the body contains only the fields to change.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse updateMergeRequest(String privateToken, String projectFullPath, int iid, Map<String, Object> body) {
+        return put(privateToken, projectPath(projectFullPath) + "/merge_requests/" + iid, body);
+    }
+
+    /**
+     * Merges a merge request.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse mergeMergeRequest(String privateToken, String projectFullPath, int iid, Map<String, Object> body) {
+        return put(privateToken, projectPath(projectFullPath) + "/merge_requests/" + iid + "/merge", body);
+    }
+
+    /**
+     * Approves a merge request on behalf of the token owner.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse approveMergeRequest(String privateToken, String projectFullPath, int iid) {
+        return post(privateToken, projectPath(projectFullPath) + "/merge_requests/" + iid + "/approve", null);
+    }
+
+    /**
+     * Revokes the token owner's merge request approval.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse unapproveMergeRequest(String privateToken, String projectFullPath, int iid) {
+        return post(privateToken, projectPath(projectFullPath) + "/merge_requests/" + iid + "/unapprove", null);
+    }
+
+    /**
+     * Creates a merge request comment.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse createMergeRequestNote(String privateToken, String projectFullPath, int iid, String body) {
+        return post(privateToken, projectPath(projectFullPath) + "/merge_requests/" + iid + "/notes", Map.of("body", body));
+    }
+
+    /**
+     * Starts a pipeline for a ref.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse createPipeline(String privateToken, String projectFullPath, Map<String, Object> body) {
+        return post(privateToken, projectPath(projectFullPath) + "/pipeline", body);
+    }
+
+    /**
+     * Retries failed/canceled pipeline jobs by numeric pipeline id.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse retryPipeline(String privateToken, String projectFullPath, int pipelineId) {
+        return post(privateToken, projectPath(projectFullPath) + "/pipelines/" + pipelineId + "/retry", null);
+    }
+
+    /**
+     * Cancels active pipeline jobs by numeric pipeline id.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse cancelPipeline(String privateToken, String projectFullPath, int pipelineId) {
+        return post(privateToken, projectPath(projectFullPath) + "/pipelines/" + pipelineId + "/cancel", null);
+    }
+
+    /**
+     * Retries a job by numeric id.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse retryJob(String privateToken, String projectFullPath, int jobId) {
+        return post(privateToken, projectPath(projectFullPath) + "/jobs/" + jobId + "/retry", null);
+    }
+
+    /**
+     * Returns a merge request (used to enrich approve/unapprove responses).
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse getMergeRequest(String privateToken, String projectFullPath, int iid) {
+        return get(privateToken, projectPath(projectFullPath) + "/merge_requests/" + iid);
     }
 }

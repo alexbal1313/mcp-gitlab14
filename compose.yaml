@@ -9,3 +9,4 @@ services:
     environment:
       TOKEN_GITLAB: ${TOKEN_GITLAB:?Set TOKEN_GITLAB}
       GITLAB_BASE_URI: ${GITLAB_BASE_URI:-https://gitlab.example.com}
+      GITLAB_WRITE_ENABLED: ${GITLAB_WRITE_ENABLED:-false}

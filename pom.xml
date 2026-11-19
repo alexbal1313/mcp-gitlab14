@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.mcpgitlab</groupId>
     <artifactId>mcp-gitlab</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <packaging>quarkus</packaging>
     <name>MCP GitLab</name>
     <description>GraphQL-first GitLab MCP server with REST v4 support</description>
