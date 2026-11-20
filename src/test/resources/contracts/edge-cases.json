@@ -1689,5 +1689,228 @@
     "expected": {},
     "label": "GraphQL HTTP status 500",
     "error": "GITLAB_ERROR"
+  },
+  {
+    "name": "gitlab_list_dir",
+    "label": "recursive listing",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "recursive": true
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/repository/tree",
+        "query": {
+          "recursive": "true",
+          "per_page": "20"
+        },
+        "response": [
+          {
+            "id": "t1",
+            "name": "App.java",
+            "type": "blob",
+            "path": "src/main/App.java"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/path": "src/main/App.java"
+    }
+  },
+  {
+    "name": "gitlab_merge_merge_request",
+    "label": "blank sha is rejected",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7,
+      "sha": " "
+    },
+    "steps": [],
+    "error": "VALIDATION_ERROR",
+    "messageContains": "sha"
+  },
+  {
+    "name": "gitlab_merge_merge_request",
+    "label": "GitLab 406 not mergeable",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7
+    },
+    "steps": [
+      {
+        "method": "PUT",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests/7/merge",
+        "status": 406,
+        "response": {
+          "message": "Branch cannot be merged"
+        },
+        "body": {
+          "should_remove_source_branch": false
+        }
+      }
+    ],
+    "error": "VALIDATION_ERROR",
+    "messageContains": "Branch cannot be merged"
+  },
+  {
+    "name": "gitlab_update_merge_request",
+    "label": "blank title is rejected",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7,
+      "title": " "
+    },
+    "steps": [],
+    "error": "VALIDATION_ERROR",
+    "messageContains": "title"
+  },
+  {
+    "name": "gitlab_update_merge_request",
+    "label": "blank targetBranch is rejected",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7,
+      "targetBranch": ""
+    },
+    "steps": [],
+    "error": "VALIDATION_ERROR",
+    "messageContains": "targetBranch"
+  },
+  {
+    "name": "gitlab_update_merge_request",
+    "label": "no fields to change",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7
+    },
+    "steps": [],
+    "error": "VALIDATION_ERROR"
+  },
+  {
+    "name": "gitlab_update_merge_request",
+    "label": "blank description clears it",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7,
+      "description": ""
+    },
+    "steps": [
+      {
+        "method": "PUT",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests/7",
+        "body": {
+          "description": ""
+        },
+        "response": {
+          "iid": 7,
+          "title": "Feature",
+          "state": "opened",
+          "assignees": [],
+          "reviewers": []
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 7
+    }
+  },
+  {
+    "name": "gitlab_create_pipeline",
+    "label": "variable without key",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "ref": "main",
+      "variables": [
+        {
+          "value": "x"
+        }
+      ]
+    },
+    "steps": [],
+    "error": "VALIDATION_ERROR"
+  },
+  {
+    "name": "gitlab_cancel_pipeline",
+    "label": "GitLab 405 not cancelable",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "pipelineIid": 12
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "PipelineId",
+        "response": {
+          "data": {
+            "project": {
+              "pipeline": {
+                "id": "gid://gitlab/Ci::Pipeline/900"
+              }
+            }
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/pipelines/900/cancel",
+        "status": 405,
+        "response": {
+          "message": "405 Method Not Allowed"
+        }
+      }
+    ],
+    "error": "VALIDATION_ERROR"
+  },
+  {
+    "name": "gitlab_retry_job",
+    "label": "job not found",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "pipelineIid": 12,
+      "jobName": "missing"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "PipelineJobId",
+        "response": {
+          "data": {
+            "project": {
+              "pipeline": {
+                "job": null
+              }
+            }
+          }
+        }
+      }
+    ],
+    "error": "NOT_FOUND"
+  },
+  {
+    "name": "gitlab_get_merge_request_commits",
+    "label": "merge request not found",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 99
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "MergeRequestCommits",
+        "response": {
+          "data": {
+            "project": {
+              "mergeRequest": null
+            }
+          }
+        }
+      }
+    ],
+    "error": "NOT_FOUND"
   }
 ]

@@ -141,14 +141,51 @@ public class GitLabRestReadClient extends GitLabRestClientBase {
     }
 
     /**
-     * Returns a non-recursive page of repository directory entries.
+     * Returns a page of repository directory entries; recursion must be requested explicitly.
      *
      * @return GitLab HTTP response without logging unfiltered data
      */
     public RestResponse listRepositoryTree(String privateToken, String projectFullPath, String path, String ref,
-                                           int items, Integer page) {
+                                           boolean recursive, int items, Integer page) {
         return get(privateToken, projectPath(projectFullPath) + "/repository/tree", "path", path, "ref", ref,
-                "recursive", false, "per_page", items, "page", page);
+                "recursive", recursive, "per_page", items, "page", page);
+    }
+
+    /**
+     * Returns a page of repository branches with the server-side search filter.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse listBranches(String privateToken, String projectFullPath, String search, int items, Integer page) {
+        return get(privateToken, projectPath(projectFullPath) + "/repository/branches", "search", search,
+                "per_page", items, "page", page);
+    }
+
+    /**
+     * Returns a repository branch by name (the whole name is URL-encoded).
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse getBranch(String privateToken, String projectFullPath, String branchName) {
+        return get(privateToken, projectPath(projectFullPath) + "/repository/branches/" + encode(branchName));
+    }
+
+    /**
+     * Compares two repository refs (branch, tag, or SHA).
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse compare(String privateToken, String projectFullPath, String from, String to) {
+        return get(privateToken, projectPath(projectFullPath) + "/repository/compare", "from", from, "to", to);
+    }
+
+    /**
+     * Returns the GitLab version.
+     *
+     * @return GitLab HTTP response without logging unfiltered data
+     */
+    public RestResponse version(String privateToken) {
+        return get(privateToken, "/api/v4/version");
     }
 
     /**

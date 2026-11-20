@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkiverse.mcp.server.OutputSchemaGenerator;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.lang.reflect.Type;
 
 /**
  * Exposes a free-form object output schema for tools with structuredContent.
@@ -20,7 +21,7 @@ public class FreeFormOutputSchemaGenerator implements OutputSchemaGenerator {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Override
-    public ObjectNode generate(Class<?> from) {
+    public ObjectNode generate(Type from) {
         ObjectNode schema = MAPPER.createObjectNode();
         schema.put("type", "object");
         schema.put("additionalProperties", true);

@@ -12,7 +12,7 @@ public class GitLabTestResource implements QuarkusTestResourceLifecycleManager {
         try {
             stub = new GitLabStub();
             return Map.of("gitlab.base.uri", stub.url(), "gitlab.token", "test-token",
-                    "quarkus.http.test-port", "0",
+                    "gitlab.write.enabled", "true", "quarkus.http.test-port", "0",
                     "quarkus.log.category.\"io.quarkiverse.mcp.server.http.runtime.StreamableHttpMcpMessageHandler\".level", "WARN");
         } catch (Exception exception) {
             throw new IllegalStateException(exception);

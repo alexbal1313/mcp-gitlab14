@@ -1629,5 +1629,782 @@
       "/milestone/title": "v1",
       "/updatedAt": "2026-01-02T03:04:05Z"
     }
+  },
+  {
+    "name": "gitlab_list_branches",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "search": "feature"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/repository/branches",
+        "query": {
+          "search": "feature",
+          "per_page": "20"
+        },
+        "headers": {
+          "X-Next-Page": "2"
+        },
+        "response": [
+          {
+            "name": "feature/x",
+            "default": false,
+            "protected": true,
+            "merged": false,
+            "developers_can_push": true,
+            "developers_can_merge": false,
+            "web_url": "https://gitlab.example.com/team/project/-/tree/feature/x",
+            "commit": {
+              "id": "0123456789abcdef",
+              "short_id": "01234567",
+              "title": "Init",
+              "message": "Init\n",
+              "author_name": "Dev",
+              "authored_date": "2026-01-02T03:04:05Z",
+              "committed_date": "2026-01-02T03:04:05Z",
+              "web_url": "https://gitlab.example.com/team/project/-/commit/0123"
+            }
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "/items/0/name": "feature/x",
+      "/items/0/protected": true,
+      "/items/0/commit/shortId": "01234567",
+      "/pageInfo/endCursor": "2",
+      "/pageInfo/hasNextPage": true
+    }
+  },
+  {
+    "name": "gitlab_get_branch",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "branchName": "feature/x"
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/repository/branches/feature%2Fx",
+        "response": {
+          "name": "feature/x",
+          "default": false,
+          "protected": true,
+          "merged": false,
+          "developers_can_push": true,
+          "developers_can_merge": false,
+          "web_url": "https://gitlab.example.com/team/project/-/tree/feature/x",
+          "commit": {
+            "id": "0123456789abcdef",
+            "short_id": "01234567",
+            "title": "Init",
+            "message": "Init\n",
+            "author_name": "Dev",
+            "authored_date": "2026-01-02T03:04:05Z",
+            "committed_date": "2026-01-02T03:04:05Z",
+            "web_url": "https://gitlab.example.com/team/project/-/commit/0123"
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/name": "feature/x",
+      "/developersCanPush": true,
+      "/developersCanMerge": false,
+      "/commit/sha": "0123456789abcdef",
+      "/commit/authorName": "Dev"
+    }
+  },
+  {
+    "name": "gitlab_compare_refs",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "from": "main",
+      "to": "feature/x",
+      "items": 1
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/repository/compare",
+        "query": {
+          "from": "main",
+          "to": "feature/x"
+        },
+        "response": {
+          "commits": [
+            {
+              "id": "old",
+              "short_id": "o",
+              "title": "Old"
+            },
+            {
+              "id": "new",
+              "short_id": "n",
+              "title": "New"
+            }
+          ],
+          "diffs": [
+            {
+              "old_path": "a.txt",
+              "new_path": "a.txt",
+              "new_file": false,
+              "deleted_file": false,
+              "renamed_file": false,
+              "diff": "@@ -1 +1 @@"
+            }
+          ],
+          "compare_timeout": false,
+          "compare_same_ref": false
+        }
+      }
+    ],
+    "expected": {
+      "/commits/0/sha": "new",
+      "/commitsTruncated": true,
+      "/diffs/0/newPath": "a.txt",
+      "/diffsTruncated": false,
+      "/sameRef": false,
+      "/diffs/0/oldPath": "a.txt"
+    }
+  },
+  {
+    "name": "gitlab_list_project_members",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "search": "ali"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "ProjectMembers",
+        "variables": {
+          "fullPath": "team/project",
+          "search": "ali",
+          "first": 20,
+          "after": null
+        },
+        "response": {
+          "data": {
+            "project": {
+              "projectMembers": {
+                "nodes": [
+                  {
+                    "accessLevel": {
+                      "stringValue": "MAINTAINER"
+                    },
+                    "user": {
+                      "username": "alice",
+                      "name": "Alice"
+                    }
+                  }
+                ],
+                "pageInfo": {
+                  "endCursor": null,
+                  "hasNextPage": false
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/items/0/username": "alice",
+      "/items/0/accessLevel": "MAINTAINER",
+      "/pageInfo/hasNextPage": false
+    }
+  },
+  {
+    "name": "gitlab_get_merge_request_commits",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "MergeRequestCommits",
+        "variables": {
+          "fullPath": "team/project",
+          "iid": "7",
+          "first": 20,
+          "after": null
+        },
+        "response": {
+          "data": {
+            "project": {
+              "mergeRequest": {
+                "commits": {
+                  "nodes": [
+                    {
+                      "sha": "abc123",
+                      "shortId": "abc",
+                      "title": "Init",
+                      "message": "Init",
+                      "authorName": "Dev",
+                      "authorEmail": "dev@example.com",
+                      "authoredDate": "2026-01-02T03:04:05Z",
+                      "webUrl": "https://gitlab.example.com/team/project/-/commit/abc123"
+                    }
+                  ],
+                  "pageInfo": {
+                    "endCursor": "c2",
+                    "hasNextPage": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expected": {
+      "/items/0/sha": "abc123",
+      "/items/0/authorName": "Dev",
+      "/pageInfo/endCursor": "c2"
+    }
+  },
+  {
+    "name": "gitlab_server_info",
+    "arguments": {},
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/version",
+        "response": {
+          "version": "14.10.3-ee",
+          "revision": "d118e6c477f"
+        }
+      }
+    ],
+    "expected": {
+      "/version": "14.10.3-ee",
+      "/revision": "d118e6c477f",
+      "/baseUri": "$GITLAB"
+    }
+  },
+  {
+    "name": "gitlab_create_merge_request",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "sourceBranch": "feature/x",
+      "targetBranch": "main",
+      "title": "Feature",
+      "description": "Details",
+      "assignees": [
+        "alice"
+      ],
+      "reviewers": [
+        "bob"
+      ],
+      "labels": [
+        "review"
+      ],
+      "removeSourceBranch": true
+    },
+    "steps": [
+      {
+        "method": "GET",
+        "path": "/api/v4/users",
+        "query": {
+          "username": "alice"
+        },
+        "response": [
+          {
+            "id": 9,
+            "username": "alice",
+            "name": "Alice",
+            "state": "active"
+          }
+        ]
+      },
+      {
+        "method": "GET",
+        "path": "/api/v4/users",
+        "query": {
+          "username": "bob"
+        },
+        "response": [
+          {
+            "id": 10,
+            "username": "bob",
+            "name": "Bob",
+            "state": "active"
+          }
+        ]
+      },
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests",
+        "status": 201,
+        "response": {
+          "iid": 7,
+          "title": "Feature",
+          "state": "opened",
+          "source_branch": "feature/x",
+          "target_branch": "main",
+          "web_url": "https://gitlab.example.com/team/project/-/merge_requests/7",
+          "updated_at": "2026-01-02T03:04:05Z",
+          "merge_commit_sha": null,
+          "assignees": [
+            {
+              "id": 9,
+              "username": "alice",
+              "name": "Alice"
+            }
+          ],
+          "reviewers": [
+            {
+              "id": 10,
+              "username": "bob",
+              "name": "Bob"
+            }
+          ]
+        },
+        "body": {
+          "source_branch": "feature/x",
+          "target_branch": "main",
+          "title": "Feature",
+          "description": "Details",
+          "assignee_ids": [
+            9
+          ],
+          "reviewer_ids": [
+            10
+          ],
+          "labels": "review",
+          "remove_source_branch": true
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 7,
+      "/sourceBranch": "feature/x",
+      "/assignees/0/username": "alice",
+      "/reviewers/0/username": "bob",
+      "/projectFullPath": "team/project"
+    }
+  },
+  {
+    "name": "gitlab_update_merge_request",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7,
+      "title": "Feature",
+      "stateEvent": "close",
+      "reviewers": []
+    },
+    "steps": [
+      {
+        "method": "PUT",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests/7",
+        "response": {
+          "iid": 7,
+          "title": "Feature",
+          "state": "closed",
+          "source_branch": "feature/x",
+          "target_branch": "main",
+          "web_url": "https://gitlab.example.com/team/project/-/merge_requests/7",
+          "updated_at": "2026-01-02T03:04:05Z",
+          "merge_commit_sha": null,
+          "assignees": [
+            {
+              "id": 9,
+              "username": "alice",
+              "name": "Alice"
+            }
+          ],
+          "reviewers": []
+        },
+        "body": {
+          "title": "Feature",
+          "state_event": "close",
+          "reviewer_ids": []
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 7,
+      "/state": "closed",
+      "/reviewers": [],
+      "/updatedAt": "2026-01-02T03:04:05Z"
+    }
+  },
+  {
+    "name": "gitlab_merge_merge_request",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7,
+      "mergeCommitMessage": "Merge feature",
+      "sha": "abc123"
+    },
+    "steps": [
+      {
+        "method": "PUT",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests/7/merge",
+        "response": {
+          "iid": 7,
+          "title": "Feature",
+          "state": "merged",
+          "source_branch": "feature/x",
+          "target_branch": "main",
+          "web_url": "https://gitlab.example.com/team/project/-/merge_requests/7",
+          "updated_at": "2026-01-02T03:04:05Z",
+          "merge_commit_sha": "def456",
+          "assignees": [
+            {
+              "id": 9,
+              "username": "alice",
+              "name": "Alice"
+            }
+          ],
+          "reviewers": [
+            {
+              "id": 10,
+              "username": "bob",
+              "name": "Bob"
+            }
+          ]
+        },
+        "body": {
+          "merge_commit_message": "Merge feature",
+          "should_remove_source_branch": false,
+          "sha": "abc123"
+        }
+      }
+    ],
+    "expected": {
+      "/state": "merged",
+      "/mergeCommitSha": "def456",
+      "/projectFullPath": "team/project"
+    }
+  },
+  {
+    "name": "gitlab_approve_merge_request",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests/7/approve",
+        "status": 201,
+        "response": {
+          "approvals_left": 0,
+          "approved_by": [
+            {
+              "user": {
+                "username": "alice",
+                "name": "Alice"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests/7",
+        "response": {
+          "iid": 7,
+          "title": "Feature",
+          "state": "opened",
+          "source_branch": "feature/x",
+          "target_branch": "main",
+          "web_url": "https://gitlab.example.com/team/project/-/merge_requests/7",
+          "updated_at": "2026-01-02T03:04:05Z",
+          "merge_commit_sha": null,
+          "assignees": [
+            {
+              "id": 9,
+              "username": "alice",
+              "name": "Alice"
+            }
+          ],
+          "reviewers": [
+            {
+              "id": 10,
+              "username": "bob",
+              "name": "Bob"
+            }
+          ]
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 7,
+      "/approved": true,
+      "/approvalsLeft": 0,
+      "/approvedBy/0": "alice"
+    }
+  },
+  {
+    "name": "gitlab_unapprove_merge_request",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests/7/unapprove",
+        "status": 201,
+        "response": {
+          "approved": false,
+          "approvals_left": 1,
+          "approved_by": []
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests/7",
+        "response": {
+          "iid": 7,
+          "title": "Feature",
+          "state": "opened",
+          "source_branch": "feature/x",
+          "target_branch": "main",
+          "web_url": "https://gitlab.example.com/team/project/-/merge_requests/7",
+          "updated_at": "2026-01-02T03:04:05Z",
+          "merge_commit_sha": null,
+          "assignees": [
+            {
+              "id": 9,
+              "username": "alice",
+              "name": "Alice"
+            }
+          ],
+          "reviewers": [
+            {
+              "id": 10,
+              "username": "bob",
+              "name": "Bob"
+            }
+          ]
+        }
+      }
+    ],
+    "expected": {
+      "/iid": 7,
+      "/approved": false,
+      "/approvalsLeft": 1,
+      "/approvedBy": []
+    }
+  },
+  {
+    "name": "gitlab_create_merge_request_note",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "iid": 7,
+      "body": "Looks good"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/merge_requests/7/notes",
+        "status": 201,
+        "body": {
+          "body": "Looks good"
+        },
+        "response": {
+          "id": 501,
+          "body": "Looks good",
+          "noteable_iid": 7,
+          "created_at": "2026-01-02T03:04:05Z"
+        }
+      }
+    ],
+    "expected": {
+      "/id": 501,
+      "/iid": 7,
+      "/createdAt": "2026-01-02T03:04:05Z",
+      "/projectFullPath": "team/project"
+    }
+  },
+  {
+    "name": "gitlab_create_pipeline",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "ref": "main",
+      "variables": [
+        {
+          "key": "DEPLOY",
+          "value": "false"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/pipeline",
+        "status": 201,
+        "response": {
+          "id": 900,
+          "iid": 12,
+          "status": "created",
+          "ref": "main",
+          "sha": "abc123",
+          "web_url": "https://gitlab.example.com/team/project/-/pipelines/900"
+        },
+        "body": {
+          "ref": "main",
+          "variables": [
+            {
+              "key": "DEPLOY",
+              "value": "false",
+              "variable_type": "env_var"
+            }
+          ]
+        }
+      }
+    ],
+    "expected": {
+      "/pipelineIid": 12,
+      "/status": "created",
+      "/ref": "main",
+      "/sha": "abc123",
+      "/projectFullPath": "team/project"
+    }
+  },
+  {
+    "name": "gitlab_retry_pipeline",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "pipelineIid": 12
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "PipelineId",
+        "variables": {
+          "fullPath": "team/project",
+          "iid": "12"
+        },
+        "response": {
+          "data": {
+            "project": {
+              "pipeline": {
+                "id": "gid://gitlab/Ci::Pipeline/900"
+              }
+            }
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/pipelines/900/retry",
+        "status": 201,
+        "response": {
+          "id": 900,
+          "iid": 12,
+          "status": "running",
+          "ref": "main",
+          "sha": "abc123",
+          "web_url": "https://gitlab.example.com/team/project/-/pipelines/900"
+        }
+      }
+    ],
+    "expected": {
+      "/pipelineIid": 12,
+      "/status": "running",
+      "/webUrl": "https://gitlab.example.com/team/project/-/pipelines/900"
+    }
+  },
+  {
+    "name": "gitlab_cancel_pipeline",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "pipelineIid": 12
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "PipelineId",
+        "variables": {
+          "fullPath": "team/project",
+          "iid": "12"
+        },
+        "response": {
+          "data": {
+            "project": {
+              "pipeline": {
+                "id": "gid://gitlab/Ci::Pipeline/900"
+              }
+            }
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/pipelines/900/cancel",
+        "response": {
+          "id": 900,
+          "iid": 12,
+          "status": "canceled",
+          "ref": "main",
+          "sha": "abc123",
+          "web_url": "https://gitlab.example.com/team/project/-/pipelines/900"
+        }
+      }
+    ],
+    "expected": {
+      "/pipelineIid": 12,
+      "/status": "canceled"
+    }
+  },
+  {
+    "name": "gitlab_retry_job",
+    "arguments": {
+      "projectFullPath": "team/project",
+      "pipelineIid": 12,
+      "jobName": "unit"
+    },
+    "steps": [
+      {
+        "method": "POST",
+        "path": "/api/graphql",
+        "operation": "PipelineJobId",
+        "variables": {
+          "fullPath": "team/project",
+          "iid": "12",
+          "jobName": "unit"
+        },
+        "response": {
+          "data": {
+            "project": {
+              "pipeline": {
+                "job": {
+                  "id": "gid://gitlab/Ci::Build/56"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/v4/projects/team%2Fproject/jobs/56/retry",
+        "status": 201,
+        "response": {
+          "id": 57,
+          "name": "unit",
+          "status": "pending",
+          "web_url": "https://gitlab.example.com/team/project/-/jobs/57"
+        }
+      }
+    ],
+    "expected": {
+      "/jobName": "unit",
+      "/status": "pending",
+      "/pipelineIid": 12,
+      "/webUrl": "https://gitlab.example.com/team/project/-/jobs/57"
+    }
   }
 ]

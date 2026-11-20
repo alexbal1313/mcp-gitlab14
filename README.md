@@ -18,8 +18,9 @@
 
 ## What it is
 
-An MCP server for GitLab, built with Quarkus. It exposes **33 tools
-(28 read + 5 write)** over **Streamable HTTP** at `/mcp`.
+An MCP server for GitLab, built with Quarkus. It exposes **49 tools
+(34 read + 15 write)** over **Streamable HTTP** at `/mcp`. Write tools are
+published only when `GITLAB_WRITE_ENABLED=true`.
 GraphQL is used where supported by the verified GitLab 14 schema;
 REST v4 covers the remaining operations.
 
@@ -32,8 +33,8 @@ the need for separate requests for related entities.
 
 **REST v4 is used where the required functionality is unavailable in the
 verified GitLab GraphQL schema.** Examples include cross-project issue and
-merge request searches, code search, commit and tag operations, and issue
-writes. Job logs combine GraphQL job lookup with REST trace retrieval.
+merge request searches, code search, branch, commit, and tag operations, and
+most writes. Job logs combine GraphQL job lookup with REST trace retrieval.
 
 This is an explicit per-operation API choice, not an automatic fallback:
 a failed GraphQL request is reported as an error, not silently retried
@@ -69,13 +70,16 @@ The default URL is a placeholder, not a hosted service.
 |---|---|---|
 | `TOKEN_GITLAB` | Shared GitLab service token | Required |
 | `GITLAB_BASE_URI` | GitLab instance base URL | `https://gitlab.example.com` |
+| `GITLAB_WRITE_ENABLED` | Publish write tools (issues, merge requests, CI/CD) | `false` |
 | `QUARKUS_HTTP_PORT` | HTTP port | `8004` |
 | `QUARKUS_HTTP_HOST` | HTTP bind address | `0.0.0.0` |
 
 The token is configured on the server, never passed as a tool argument.
 All callers use that token's permissions. The server does not configure
-MCP client authentication and includes write tools by default. Do not expose
-it to untrusted networks; restrict access or use an authenticating reverse proxy.
+MCP client authentication. Write tools are disabled by default: with
+`GITLAB_WRITE_ENABLED=false` they are absent from `tools/list` and calls to them
+are rejected. Enable them only when agents need to modify GitLab. Do not expose
+the server to untrusted networks; restrict access or use an authenticating reverse proxy.
 For local-only access, set `QUARKUS_HTTP_HOST=127.0.0.1`.
 
 ### HTTPS and private certificate authorities
@@ -144,7 +148,7 @@ Start the server before connecting your agent. The two URLs serve different purp
 
 The GitLab token belongs on the server, not in agent configuration or prompts.
 One server process connects to one GitLab instance using one shared token.
-Agent-side tool approval is recommended, especially for the five write tools.
+Agent-side tool approval is recommended, especially for write tools.
 
 ### Claude Code
 
@@ -218,13 +222,15 @@ intentionally publishes the service on the host loopback interface only.
 - "List open issues in team/project assigned to alice."
 - "Review merge request !3 in team/project, including its diff and discussions."
 - "Show the last 100 log lines for job unit in pipeline IID 12 of team/project."
+- "Compare main with feature/x in team/project and summarize the changed files."
 - "Create an issue in team/project after showing me the proposed title and body."
+  (requires `GITLAB_WRITE_ENABLED=true`)
 
 Use tools only against projects the shared server token is authorized to access.
 
 ## Tools
 
-### Read tools (28)
+### Read tools (34)
 
 | Group | Tool | Purpose | GitLab API | Key arguments |
 |---|---|---|---|---|
@@ -247,7 +253,11 @@ Use tools only against projects the shared server token is authorized to access.
 | Commits | `gitlab_get_commit_diff` | Get a commit diff | REST | `projectFullPath`, `sha`, `items`, `afterCursor` |
 | Tags | `gitlab_list_tags` | List project tags | REST | `projectFullPath`, `items`, `afterCursor` |
 | Tags | `gitlab_get_tag` | Get a tag by name | REST | `projectFullPath`, `tagName` |
-| Repository tree | `gitlab_list_dir` | List files and folders without recursion | REST | `projectFullPath`, `path`, `ref` |
+| Merge requests | `gitlab_get_merge_request_commits` | List merge request commits | GraphQL | `projectFullPath`, `iid`, `items`, `afterCursor` |
+| Branches | `gitlab_list_branches` | List repository branches | REST | `projectFullPath`, `search`, `items`, `afterCursor` |
+| Branches | `gitlab_get_branch` | Get branch details | REST | `projectFullPath`, `branchName` |
+| Commits | `gitlab_compare_refs` | Compare two refs: commits and changed file paths | REST | `projectFullPath`, `from`, `to`, `items` |
+| Repository tree | `gitlab_list_dir` | List files and folders, optionally recursive | REST | `projectFullPath`, `path`, `ref`, `recursive` |
 | Users | `gitlab_search_users` | Search users by name or username using Latin letters | REST | `userName`, `items`, `afterCursor` |
 | Pipelines | `gitlab_list_project_pipelines` | List and filter project pipelines | GraphQL | `projectFullPath`, `status`, `ref`, date filters |
 | Pipelines | `gitlab_get_pipeline` | Get pipeline details | GraphQL | `projectFullPath`, `pipelineIid` |
@@ -256,8 +266,12 @@ Use tools only against projects the shared server token is authorized to access.
 | Jobs | `gitlab_get_job_log` | Get the tail of a job log | GraphQL + REST | `projectFullPath`, `pipelineIid`, `jobName`, `lines` |
 | Labels | `gitlab_list_project_labels` | List project labels | REST | `projectFullPath`, `items`, `afterCursor` |
 | Milestones | `gitlab_list_project_milestones` | List project milestones | REST | `projectFullPath`, `items`, `afterCursor` |
+| Members | `gitlab_list_project_members` | List direct and inherited project members with access levels | GraphQL | `projectFullPath`, `search`, `items`, `afterCursor` |
+| Server | `gitlab_server_info` | Get the GitLab version; verifies connectivity and the token | REST | — |
 
-### Write tools (5)
+### Write tools (15)
+
+Published only when `GITLAB_WRITE_ENABLED=true`.
 
 | Group | Tool | Purpose | GitLab API | Key arguments |
 |---|---|---|---|---|
@@ -266,6 +280,16 @@ Use tools only against projects the shared server token is authorized to access.
 | Labels | `gitlab_modify_issue_labels` | Add or remove issue labels | REST | `projectFullPath`, `iid`, `action`, `labels` |
 | Assignees | `gitlab_assign_issue` | Replace all assignees; an empty array removes all | REST | `projectFullPath`, `iid`, `assignees` |
 | Milestones | `gitlab_assign_issue_milestone` | Assign or remove an issue milestone | REST | `projectFullPath`, `iid`, `milestone` |
+| Merge requests | `gitlab_create_merge_request` | Create a merge request | REST | `projectFullPath`, `sourceBranch`, `targetBranch`, `title`, `assignees`, `reviewers` |
+| Merge requests | `gitlab_update_merge_request` | Partially update title, description, state, target branch, assignees, reviewers | REST | `projectFullPath`, `iid`, `title`, `stateEvent`, `targetBranch` |
+| Merge requests | `gitlab_merge_merge_request` | Merge a merge request, optionally guarded by the expected HEAD SHA | REST | `projectFullPath`, `iid`, `sha`, `removeSourceBranch` |
+| Merge requests | `gitlab_approve_merge_request` | Approve as the token owner | REST | `projectFullPath`, `iid` |
+| Merge requests | `gitlab_unapprove_merge_request` | Revoke the token owner's approval | REST | `projectFullPath`, `iid` |
+| Merge requests | `gitlab_create_merge_request_note` | Add a merge request comment | REST | `projectFullPath`, `iid`, `body` |
+| Pipelines | `gitlab_create_pipeline` | Start a pipeline for a ref with optional variables | REST | `projectFullPath`, `ref`, `variables` |
+| Pipelines | `gitlab_retry_pipeline` | Retry failed/canceled pipeline jobs | GraphQL + REST | `projectFullPath`, `pipelineIid` |
+| Pipelines | `gitlab_cancel_pipeline` | Cancel active pipeline jobs | GraphQL + REST | `projectFullPath`, `pipelineIid` |
+| Jobs | `gitlab_retry_job` | Retry a pipeline job by name | GraphQL + REST | `projectFullPath`, `pipelineIid`, `jobName` |
 
 ## Tool arguments and response contracts
 
@@ -291,8 +315,23 @@ and optional filters, for each tool.
   `text`, `totalLines`, and `truncated`.
 - `gitlab_assign_issue` replaces all assignees; an empty array removes all.
   An empty/omitted milestone removes the assignment in `gitlab_assign_issue_milestone`.
-- Write tools are enabled by default. There are no tools for deleting issues,
-  creating/merging merge requests, or starting/retrying pipelines in this version.
+- `gitlab_list_dir` is non-recursive unless `recursive: true` is passed.
+- `gitlab_compare_refs` returns commits newest first (up to `items`) and up to
+  200 changed file paths without diff content; `commitsTruncated`,
+  `diffsTruncated`, `compareTimeout`, and `sameRef` flag partial results.
+- `gitlab_update_merge_request` sends only supplied fields; a blank `title` or
+  `targetBranch` is a `VALIDATION_ERROR`, while an empty `description` clears it.
+  `assignees`/`reviewers` replace the whole list; an empty array removes everyone.
+- `gitlab_merge_merge_request` merges only if the source branch HEAD still equals
+  `sha` when it is supplied; a blank `sha` is rejected.
+- Pipeline variables are `{key, value}` pairs of type `env_var`. Pipelines and
+  jobs are addressed by project-scoped `pipelineIid` and `jobName`; GitLab
+  creates a new job attempt with the same name on retry.
+- GitLab 405/406 responses for objects in an unsuitable state (for example, a
+  merge request that cannot be merged or a pipeline that cannot be canceled)
+  are reported as `VALIDATION_ERROR`.
+- Write tools are disabled by default (`GITLAB_WRITE_ENABLED=false`). There are
+  no tools for deleting issues, branches, or merge requests.
 
 ### Example tool calls
 
@@ -315,7 +354,8 @@ After MCP initialization, a `tools/call` JSON-RPC request looks like this:
 }
 ```
 
-An issue creation call uses these parameters (ask for approval before writing):
+An issue creation call uses these parameters (requires `GITLAB_WRITE_ENABLED=true`;
+ask for approval before writing):
 
 ```json
 {
@@ -377,7 +417,7 @@ whole and paginated locally; upstream diff limits can still truncate results.
 ```
 
 This compiles the application, runs unit and HTTP integration tests, and builds
-the JVM package. Tests cover all 33 tools through the real MCP endpoint;
+the JVM package. Tests cover all 49 tools through the real MCP endpoint;
 only the external GitLab API is replaced. No real GitLab token is required.
 Both GitLab clients are also tested against trusted and untrusted HTTPS.
 
@@ -420,11 +460,12 @@ compile Java sources, so the JVM package must be built first.
    ```dotenv
    TOKEN_GITLAB=replace-with-your-gitlab-token
    GITLAB_BASE_URI=https://gitlab.example.com
+   GITLAB_WRITE_ENABLED=false
    ```
 
    The example token is sufficient for image builds only; replace it with a
-   real token before using the server. Write tools require the permissions
-   described in [Requirements](#requirements).
+   real token before using the server. Set `GITLAB_WRITE_ENABLED=true` to publish
+   write tools; they require the permissions described in [Requirements](#requirements).
 
 3. Build the JVM package and the image, then start the server:
 
@@ -481,8 +522,9 @@ scripted GitLab API (no real GitLab credentials or writes):
 ./mvnw test -Dtest=DockerSmokeTest -Ddocker.smoke=true
 ```
 
-The test initializes MCP, checks all 33 advertised tools, performs a read and
-an issue creation through the packaged application, then removes its container.
+The test enables write tools, initializes MCP, checks all 49 advertised tools,
+performs a read and an issue creation through the packaged application, then
+removes its container.
 Compose uses the stable image name `mcp-gitlab14:local`, regardless of the clone directory.
 The test requires Docker and this already built image;
 use `-Ddocker.image=your-image` for another image name. It is not a live GitLab

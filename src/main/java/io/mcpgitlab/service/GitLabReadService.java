@@ -17,6 +17,8 @@ public class GitLabReadService extends GitLabServiceBase {
 
     private static final int MAX_FILE_LINES = 500;
 
+    static final int MAX_COMPARE_DIFFS = 200;
+
     /**
      * Returns projects accessible to the service token.
      *
@@ -396,17 +398,124 @@ public class GitLabReadService extends GitLabServiceBase {
     }
 
     /**
-     * Returns a non-recursive list of repository directory files and folders through GitLab REST v4.
+     * Returns repository directory files and folders through GitLab REST v4;
+     * non-recursive by default.
      *
      * @return normalized page of directory entries or an MCP error
      */
-    public ToolResponse listDir(String projectFullPath, String path, String ref, Integer items, String afterCursor) {
+    public ToolResponse listDir(String projectFullPath, String path, String ref, Boolean recursive, Integer items, String afterCursor) {
         return execute(() -> {
             int limit = pageSize(items);
             validateProject(projectFullPath);
             return restPage(restClient.listRepositoryTree(privateToken, projectFullPath, optional(path), optional(ref),
-                    limit, restPageNumber(afterCursor)), this::treeEntry);
+                    Boolean.TRUE.equals(recursive), limit, restPageNumber(afterCursor)), this::treeEntry);
         });
+    }
+
+    /**
+     * Returns repository branches through GitLab REST v4.
+     *
+     * @return normalized page of branches or an MCP error
+     */
+    public ToolResponse listBranches(String projectFullPath, String search, Integer items, String afterCursor) {
+        return execute(() -> {
+            int limit = pageSize(items);
+            validateProject(projectFullPath);
+            return restPage(restClient.listBranches(privateToken, projectFullPath, optional(search), limit,
+                    restPageNumber(afterCursor)), this::branchList);
+        });
+    }
+
+    /**
+     * Returns a repository branch by name through GitLab REST v4.
+     *
+     * @return detailed branch information or an MCP error
+     */
+    public ToolResponse getBranch(String projectFullPath, String branchName) {
+        return execute(() -> {
+            validateProject(projectFullPath);
+            required(branchName, "branchName");
+            return branchDetail(restObject(restClient.getBranch(privateToken, projectFullPath, branchName)));
+        });
+    }
+
+    /**
+     * Compares two repository refs: commits and changed file paths without diff content.
+     *
+     * @return comparison result or an MCP error
+     */
+    public ToolResponse compareRefs(String projectFullPath, String from, String to, Integer items) {
+        return execute(() -> {
+            int limit = pageSize(items);
+            validateProject(projectFullPath);
+            required(from, "from");
+            required(to, "to");
+            return compareResult(restObject(restClient.compare(privateToken, projectFullPath, from, to)), limit);
+        });
+    }
+
+    /**
+     * Returns direct and inherited project members through GitLab GraphQL.
+     *
+     * @return normalized page of project members or an MCP error
+     */
+    public ToolResponse listProjectMembers(String projectFullPath, String search, Integer items, String afterCursor) {
+        return execute(() -> {
+            int limit = pageSize(items);
+            validateProject(projectFullPath);
+            Map<String, Object> project = graphQL("""
+                    query ProjectMembers($fullPath: ID!, $search: String, $first: Int!, $after: String) {
+                      project(fullPath: $fullPath) {
+                        projectMembers(search: $search, relations: [DIRECT, INHERITED], first: $first, after: $after) {
+                          nodes { accessLevel { stringValue } user { username name } }
+                          pageInfo { endCursor hasNextPage }
+                        }
+                      }
+                    }
+                    """, vars("fullPath", projectFullPath, "search", optional(search), "first", limit,
+                    "after", cursor(afterCursor)), "project");
+            return page(object(project.get("projectMembers")), this::member);
+        });
+    }
+
+    /**
+     * Returns merge request commits through GitLab GraphQL.
+     *
+     * @return normalized page of commits or an MCP error
+     */
+    public ToolResponse getMergeRequestCommits(String projectFullPath, Integer iid, Integer items, String afterCursor) {
+        return execute(() -> {
+            int limit = pageSize(items);
+            validateProject(projectFullPath);
+            validateIid(iid);
+            Map<String, Object> project = graphQL("""
+                    query MergeRequestCommits($fullPath: ID!, $iid: String!, $first: Int!, $after: String) {
+                      project(fullPath: $fullPath) {
+                        mergeRequest(iid: $iid) {
+                          commits(first: $first, after: $after) {
+                            nodes { sha shortId title message authorName authorEmail authoredDate webUrl }
+                            pageInfo { endCursor hasNextPage }
+                          }
+                        }
+                      }
+                    }
+                    """, vars("fullPath", projectFullPath, "iid", iid.toString(), "first", limit,
+                    "after", cursor(afterCursor)), "project");
+            Map<String, Object> mergeRequest = object(project.get("mergeRequest"));
+            if (mergeRequest.isEmpty()) {
+                throw new GitLabException("NOT_FOUND", "Merge request not found");
+            }
+            return page(object(mergeRequest.get("commits")), this::commitList);
+        });
+    }
+
+    /**
+     * Returns the GitLab version; a successful response confirms connectivity and token validity.
+     *
+     * @return `{ version, revision, baseUri }` or an MCP error
+     */
+    public ToolResponse serverInfo() {
+        return execute(() -> serverInfoResult(restObject(restClient.version(privateToken))));
     }
 
     public ToolResponse searchUsers(String userName, Integer items, String afterCursor) {
@@ -798,13 +907,14 @@ public class GitLabReadService extends GitLabServiceBase {
         return result;
     }
 
-    private Map<String, Object> commitList(Map<String, Object> source) {
+    /** Compact commit; REST v4 returns the SHA in the {@code id} field, GraphQL in {@code sha}. */
+    Map<String, Object> commitList(Map<String, Object> source) {
         Map<String, Object> result = fields(source, "shortId", "title", "message", "authorName", "authorEmail", "authoredDate", "webUrl");
         result.put("sha", value(source, "sha", "id"));
         return result;
     }
 
-    private Map<String, Object> commitDetail(Map<String, Object> source) {
+    Map<String, Object> commitDetail(Map<String, Object> source) {
         Map<String, Object> result = commitList(source);
         result.put("committedDate", value(source, "committedDate"));
         result.put("parentIds", value(source, "parentIds"));
@@ -815,7 +925,7 @@ public class GitLabReadService extends GitLabServiceBase {
         return fields(source, "name", "target", "message", "protected");
     }
 
-    private Map<String, Object> tagDetail(Map<String, Object> source) {
+    Map<String, Object> tagDetail(Map<String, Object> source) {
         Map<String, Object> result = tagList(source);
         Map<String, Object> commit = object(source.get("commit"));
         Map<String, Object> commitResult = fields(commit, "shortId", "title", "authoredDate", "authorName", "webUrl");
@@ -846,6 +956,61 @@ public class GitLabReadService extends GitLabServiceBase {
 
     private Map<String, Object> treeEntry(Map<String, Object> source) {
         return fields(source, "id", "name", "type", "path");
+    }
+
+    Map<String, Object> branchList(Map<String, Object> source) {
+        Map<String, Object> result = fields(source, "name", "default", "protected", "merged");
+        result.put("commit", fields(object(source.get("commit")), "shortId", "title", "committedDate"));
+        result.put("webUrl", value(source, "webUrl"));
+        return result;
+    }
+
+    Map<String, Object> branchDetail(Map<String, Object> source) {
+        Map<String, Object> result = branchList(source);
+        copy(result, source, "developersCanPush", "developersCanMerge");
+        result.put("commit", restCommitCard(object(source.get("commit"))));
+        return result;
+    }
+
+    Map<String, Object> compareResult(Map<String, Object> source, int items) {
+        List<Map<String, Object>> commits = objects(source.get("commits"));
+        // GitLab compare returns commits oldest first; the contract is newest first.
+        List<Object> commitItems = new ArrayList<>();
+        for (int index = commits.size() - 1; index >= 0 && commitItems.size() < items; index--) {
+            commitItems.add(commitList(commits.get(index)));
+        }
+        List<Map<String, Object>> diffs = objects(source.get("diffs"));
+        List<Object> diffItems = new ArrayList<>();
+        for (int index = 0; index < diffs.size() && index < MAX_COMPARE_DIFFS; index++) {
+            diffItems.add(fields(diffs.get(index), "oldPath", "newPath", "newFile", "deletedFile", "renamedFile"));
+        }
+        Map<String, Object> result = map();
+        result.put("commits", commitItems);
+        result.put("diffs", diffItems);
+        result.put("commitsTruncated", commits.size() > items);
+        result.put("diffsTruncated", diffs.size() > MAX_COMPARE_DIFFS);
+        result.put("compareTimeout", Boolean.TRUE.equals(value(source, "compareTimeout")));
+        result.put("sameRef", Boolean.TRUE.equals(value(source, "compareSameRef")));
+        return result;
+    }
+
+    Map<String, Object> member(Map<String, Object> source) {
+        Map<String, Object> result = person(object(source.get("user")));
+        result.put("accessLevel", value(object(source.get("accessLevel")), "stringValue"));
+        return result;
+    }
+
+    Map<String, Object> serverInfoResult(Map<String, Object> source) {
+        Map<String, Object> result = fields(source, "version", "revision");
+        result.put("baseUri", baseUri);
+        return result;
+    }
+
+    private Map<String, Object> restCommitCard(Map<String, Object> source) {
+        Map<String, Object> result = map();
+        result.put("sha", value(source, "sha", "id"));
+        copy(result, source, "shortId", "title", "authorName", "authoredDate", "committedDate", "webUrl");
+        return result;
     }
 
     private Map<String, Object> pipelineList(Map<String, Object> source) {
@@ -911,14 +1076,6 @@ public class GitLabReadService extends GitLabServiceBase {
     }
 
     private int ciNumericId(Object gid) {
-        if (!(gid instanceof String id) || !id.contains("/")) {
-            throw new GitLabException("GITLAB_ERROR", "GitLab did not return a numeric job ID");
-        }
-        String tail = id.substring(id.lastIndexOf('/') + 1);
-        try {
-            return Integer.valueOf(tail);
-        } catch (NumberFormatException exception) {
-            throw new GitLabException("GITLAB_ERROR", "GitLab did not return a numeric job ID");
-        }
+        return numericId(gid);
     }
 }

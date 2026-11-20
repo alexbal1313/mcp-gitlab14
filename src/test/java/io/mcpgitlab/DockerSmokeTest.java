@@ -27,7 +27,7 @@ class DockerSmokeTest {
         var server = HttpServer.create(new InetSocketAddress("0.0.0.0", 0), 0);
         try (var gitlab = new GitLabStub(server)) {
             String container = docker("run", "--detach", "--rm", "--add-host", "host.docker.internal:host-gateway",
-                    "-p", "127.0.0.1::8004", "-e", "TOKEN_GITLAB=test-token",
+                    "-p", "127.0.0.1::8004", "-e", "TOKEN_GITLAB=test-token", "-e", "GITLAB_WRITE_ENABLED=true",
                     "-e", "GITLAB_BASE_URI=http://host.docker.internal:" + server.getAddress().getPort(), image).strip();
             try {
                 String port = docker("port", container, "8004/tcp").strip().substring("127.0.0.1:".length());
