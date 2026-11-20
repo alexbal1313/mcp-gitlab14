@@ -224,6 +224,7 @@ intentionally publishes the service on the host loopback interface only.
 - "Show the last 100 log lines for job unit in pipeline IID 12 of team/project."
 - "Compare main with feature/x in team/project and summarize the changed files."
 - "Create an issue in team/project after showing me the proposed title and body."
+  (requires `GITLAB_WRITE_ENABLED=true`)
 
 Use tools only against projects the shared server token is authorized to access.
 
@@ -353,7 +354,8 @@ After MCP initialization, a `tools/call` JSON-RPC request looks like this:
 }
 ```
 
-An issue creation call uses these parameters (ask for approval before writing):
+An issue creation call uses these parameters (requires `GITLAB_WRITE_ENABLED=true`;
+ask for approval before writing):
 
 ```json
 {
@@ -520,8 +522,9 @@ scripted GitLab API (no real GitLab credentials or writes):
 ./mvnw test -Dtest=DockerSmokeTest -Ddocker.smoke=true
 ```
 
-The test enables write tools, initializes MCP, checks all 49 advertised tools, performs a read and
-an issue creation through the packaged application, then removes its container.
+The test enables write tools, initializes MCP, checks all 49 advertised tools,
+performs a read and an issue creation through the packaged application, then
+removes its container.
 Compose uses the stable image name `mcp-gitlab14:local`, regardless of the clone directory.
 The test requires Docker and this already built image;
 use `-Ddocker.image=your-image` for another image name. It is not a live GitLab
