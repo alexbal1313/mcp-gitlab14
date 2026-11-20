@@ -516,6 +516,6 @@ public class GitLabWriteService extends GitLabServiceBase {
         if (users.isEmpty()) {
             throw new GitLabException("NOT_FOUND", "User not found: " + username);
         }
-        return (Integer) users.get(0).get("id");
+        return (Integer) users.getFirst().get("id");
     }
 }
