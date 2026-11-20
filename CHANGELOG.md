@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+### Changed
+
+- Upgraded Quarkus to 3.40.1.2.
+
 ## 0.2.0
 
 ### Breaking
